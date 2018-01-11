@@ -1,0 +1,18 @@
+name:                mon
+version:             0.1.0.0
+description:         Monitoring at Serokell
+github:              "serokell/mon"
+license:             MPL-2.0
+author:              "Serokell"
+maintainer:          "hi@serokell.io"
+copyright:           "2018 Serokell"
+
+extra-source-files:
+- README.md
+
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
