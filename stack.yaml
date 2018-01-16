@@ -2,3 +2,6 @@ resolver: lts-9.21
 
 packages:
 - .
+
+extra-deps:
+- universum-0.9.1
