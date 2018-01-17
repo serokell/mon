@@ -73,12 +73,9 @@ sendStatsdUDP :: Endpoint -> StatsdMessage -> IO ()
 sendStatsdUDP endpoint statsdMessage = sendUDP endpoint (encodeStatsdMessage statsdMessage)
 
 sendUDP :: Endpoint -> ByteString -> IO ()
-sendUDP (Endpoint eHost ePort) msg = withSocketsDo $ bracket getSocket close talk
-    where
-    getSocket = do
-        (serveraddr:_) <- getAddrInfo Nothing (Just eHost) (Just ePort)
-        s <- socket (addrFamily serveraddr) Datagram defaultProtocol
-        connect s (addrAddress serveraddr) >> return s
-    talk s = do
-        send s msg
-        recv s 1024 >>= \resp -> putStrLn $ "Received " <> resp
+sendUDP (Endpoint eHost ePort) msg = withSocketsDo $ do
+    (serveraddr:_) <- getAddrInfo Nothing (Just eHost) (Just ePort)
+    s <- socket (addrFamily serveraddr) Datagram defaultProtocol
+    connect s (addrAddress serveraddr) >> return s
+    send s msg
+    close s
