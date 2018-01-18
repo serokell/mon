@@ -11,8 +11,13 @@ extra-source-files:
 - README.md
 
 
-dependencies:
-- base >= 4.7 && < 5
-
 library:
   source-dirs: src
+  dependencies:
+    - base >= 4.7 && < 5
+    - bytestring
+    - network
+    - universum
+
+  default-extensions:
+    - NoImplicitPrelude
