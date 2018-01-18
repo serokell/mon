@@ -8,3 +8,7 @@ extra-deps:
 
 ghc-options:
   mon: -Werror -Wall
+
+nix:
+  packages:
+    - zlib
