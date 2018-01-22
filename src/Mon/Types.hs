@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- | StatsdMessage is a representation of a statsd udp message.
 module Mon.Types
        ( StatsdMessage (..)
        , MetricType (..)
@@ -10,21 +10,23 @@ module Mon.Types
        , encodeStatsdMessage
        ) where
 
-import Data.ByteString (intercalate)
 import Universum hiding (intercalate)
 
+import Data.ByteString (intercalate)
+
 data StatsdMessage = StatsdMessage
-    { smName :: !Name
-    , smValue :: !Int
+    { smName       :: !Name
+    , smValue      :: !Int
     , smMetricType :: !MetricType
-    , smRate :: !(Maybe Double)
-    , smTags :: ![(Tag,Maybe Text)]
-    }
+    , smRate       :: !(Maybe Double)
+    , smTags       :: ![Tag]
+    } deriving Show
 
 data MetricType = Counter | Gauge | Timer
+    deriving Show
 
 type Name = Text
-type Tag = Text
+type Tag = (Text,Text)
 type Rate = Double
 
 encodeStatsdMessage :: StatsdMessage -> ByteString
@@ -37,12 +39,11 @@ encodeStatsdMessage StatsdMessage {..} = intercalate "|" (catMaybes
 
 encodeMetricType :: MetricType -> ByteString
 encodeMetricType Counter = "c"
-encodeMetricType Gauge = "g"
-encodeMetricType Timer = "ms"
+encodeMetricType Gauge   = "g"
+encodeMetricType Timer   = "ms"
 
-encodeTags :: [(Tag, Maybe Text)] -> ByteString
+encodeTags :: [Tag] -> ByteString
 encodeTags tags = if null tags then "" else "|#" <> intercalate ","  tagsBSs
-    where
-    tagsBSs = fmap (\(tag,tagValue) -> encodeUtf8 $ tag <> maybe "" (":"<>) tagValue)
-                   tags
-
+  where
+    tagsBSs = (\(tagKey,tagVal) -> encodeUtf8 $ tagKey <> (if null tagVal then "" else (":"<>) tagVal))
+          <$> tags

@@ -1,28 +1,34 @@
-{-# LANGUAGE RecordWildCards #-}
+-- | This module encapsulates usage of 'network' library UDP sending.
 
 module Mon.Network
-       ( Endpoint (..)
+       ( Endpoint
        , sendStatsdUDP
        ) where
 
-import Network.Socket (close, defaultProtocol, connect, addrAddress, withSocketsDo, getAddrInfo, addrFamily, SocketType(Datagram), socket)
-import Network.Socket.ByteString (send)
 import Universum
 
-import Mon.Types
+import Network.Socket (close, defaultProtocol, connect, addrAddress
+                      , withSocketsDo, getAddrInfo, addrFamily
+                      , SocketType(Datagram), socket)
+import Network.Socket.ByteString (send)
 
-data Endpoint = Endpoint
-    { eHost :: !Text
-    , ePort :: !Text
-    }
+import Mon.Types (StatsdMessage, encodeStatsdMessage)
 
+type Endpoint = (Text, Int)
+
+
+-- | Function that sends UDP message containing 'StatsdMessage'.
 sendStatsdUDP :: Endpoint -> StatsdMessage -> IO ()
-sendStatsdUDP endpoint statsdMessage = sendUDP endpoint (encodeStatsdMessage statsdMessage)
+sendStatsdUDP endpoint statsdMessage =
+    sendUDP endpoint (encodeStatsdMessage statsdMessage)
 
 sendUDP :: Endpoint -> ByteString -> IO ()
-sendUDP Endpoint {..} msg = withSocketsDo $ do
-    (serveraddr:_) <- getAddrInfo Nothing (Just $ toString eHost) (Just $ toString ePort)
-    s <- socket (addrFamily serveraddr) Datagram defaultProtocol
-    connect s (addrAddress serveraddr)
-    _ <- send s msg
-    close s
+sendUDP (host,port) msg = withSocketsDo $ do
+    (serveraddr:_) <- getAddrInfo Nothing
+                                  (Just $ toString host) (Just $ show port)
+    bracket (socket (addrFamily serveraddr) Datagram defaultProtocol)
+             close
+            (\s -> do
+                connect s (addrAddress serveraddr)
+                void $ send s msg
+            )

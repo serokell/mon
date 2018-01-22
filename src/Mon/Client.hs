@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+-- | Monitoring Client contains functions for sending
+--   metrics or events to the monitoring server
 
 module Mon.Client
        ( recordCounter
@@ -9,24 +10,32 @@ module Mon.Client
 
 import Universum
 
-import Mon.Types
-import Mon.Network
+import Mon.Types (MetricType(..), Name, Rate, Tag, StatsdMessage(..))
+import Mon.Network (sendStatsdUDP, Endpoint)
 
-recordMetric :: MetricType -> Endpoint -> Name -> Rate -> [(Tag,Text)] -> Int -> IO ()
-recordMetric metricType endpoint name rate tags value = sendStatsdUDP endpoint $ StatsdMessage
+recordMetric :: MetricType -> Endpoint -> Name -> Rate -> [Tag] -> Int -> IO ()
+recordMetric metricType endpoint name rate tags value =
+    sendStatsdUDP endpoint $ StatsdMessage
     { smName = name
     , smValue = value
     , smMetricType = metricType
     , smRate = Just rate
-    , smTags = fmap (bimap identity $ \v -> if null v then Nothing else Just v) tags
+    , smTags = tags
     }
 
-recordCounter, recordGauge, recordTimer :: Endpoint -> Name -> Rate -> [(Tag,Text)] -> Int -> IO ()
+recordCounter, recordGauge, recordTimer
+    :: Endpoint
+    -> Name
+    -> Rate
+    -> [Tag]
+    -> Int
+    -> IO ()
 recordCounter = recordMetric Counter
 recordGauge = recordMetric Gauge
 recordTimer = recordMetric Timer
 
-reportEvent :: Endpoint -> Name -> Rate -> [(Tag,Text)] -> IO ()
-reportEvent endpoint name rate tags = recordMetric Counter endpoint name rate tags 0
+reportEvent :: Endpoint -> Name -> Rate -> [Tag] -> IO ()
+reportEvent endpoint name rate tags =
+    recordMetric Counter endpoint name rate tags 0
 
 
