@@ -30,20 +30,20 @@ type Tag = (Text,Text)
 type Rate = Double
 
 encodeStatsdMessage :: StatsdMessage -> ByteString
-encodeStatsdMessage StatsdMessage {..} = intercalate "|" (catMaybes
+encodeStatsdMessage StatsdMessage {..} = intercalate "|" $ catMaybes
     [ Just $ encodeUtf8 smName <> ":" <> show smValue
     , Just $ encodeMetricType smMetricType
-    , ("@"<>) . show <$> smRate
-    ])
-    <> encodeTags smTags
+    , ("@" <>) . show <$> smRate
+    , ("#" <>) <$> encodeTags smTags
+    ]
 
 encodeMetricType :: MetricType -> ByteString
 encodeMetricType Counter = "c"
 encodeMetricType Gauge   = "g"
 encodeMetricType Timer   = "ms"
 
-encodeTags :: [Tag] -> ByteString
-encodeTags tags = if null tags then "" else "|#" <> intercalate ","  tagsBSs
+encodeTags :: [Tag] -> Maybe ByteString
+encodeTags []   = Nothing
+encodeTags tags = Just $ intercalate "," (map encodeTag tags)
   where
-    tagsBSs = (\(tagKey,tagVal) -> encodeUtf8 $ tagKey <> (if null tagVal then "" else (":"<>) tagVal))
-          <$> tags
+    encodeTag (tag, val) = encodeUtf8 $ tag <> if null val then "" else ":" <> val

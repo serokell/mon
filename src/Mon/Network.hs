@@ -7,9 +7,9 @@ module Mon.Network
 
 import Universum
 
-import Network.Socket (close, defaultProtocol, connect, addrAddress
-                      , withSocketsDo, getAddrInfo, addrFamily
-                      , SocketType(Datagram), socket)
+import Network.Socket (AddrInfo (..), Family (AF_INET), SocketType (Datagram), addrAddress,
+                       addrFamily, close, connect, defaultHints, defaultProtocol, getAddrInfo,
+                       socket, withSocketsDo)
 import Network.Socket.ByteString (send)
 
 import Mon.Types (StatsdMessage, encodeStatsdMessage)
@@ -24,10 +24,14 @@ sendStatsdUDP endpoint statsdMessage =
 
 sendUDP :: Endpoint -> ByteString -> IO ()
 sendUDP (host,port) msg = withSocketsDo $ do
-    (serveraddr:_) <- getAddrInfo Nothing
-                                  (Just $ toString host) (Just $ show port)
+    let hints = defaultHints { addrFamily = AF_INET
+                             , addrSocketType = Datagram
+                             }
+    serveraddr : _ <- getAddrInfo (Just hints)
+                                  (Just $ toString host)
+                                  (Just $ show port)
     bracket (socket (addrFamily serveraddr) Datagram defaultProtocol)
-             close
+            close
             (\s -> do
                 connect s (addrAddress serveraddr)
                 void $ send s msg

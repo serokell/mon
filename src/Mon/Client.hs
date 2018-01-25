@@ -10,8 +10,8 @@ module Mon.Client
 
 import Universum
 
-import Mon.Types (MetricType(..), Name, Rate, Tag, StatsdMessage(..))
-import Mon.Network (sendStatsdUDP, Endpoint)
+import Mon.Network (Endpoint, sendStatsdUDP)
+import Mon.Types (MetricType (..), Name, Rate, StatsdMessage (..), Tag)
 
 recordMetric :: MetricType -> Endpoint -> Name -> Rate -> [Tag] -> Int -> IO ()
 recordMetric metricType endpoint name rate tags value =
@@ -31,11 +31,9 @@ recordCounter, recordGauge, recordTimer
     -> Int
     -> IO ()
 recordCounter = recordMetric Counter
-recordGauge = recordMetric Gauge
-recordTimer = recordMetric Timer
+recordGauge   = recordMetric Gauge
+recordTimer   = recordMetric Timer
 
 reportEvent :: Endpoint -> Name -> Rate -> [Tag] -> IO ()
 reportEvent endpoint name rate tags =
     recordMetric Counter endpoint name rate tags 0
-
-
