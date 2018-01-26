@@ -36,4 +36,4 @@ recordTimer   = recordMetric Timer
 
 reportEvent :: Endpoint -> Name -> Rate -> [Tag] -> IO ()
 reportEvent endpoint name rate tags =
-    recordMetric Counter endpoint name rate tags 0
+    recordMetric Counter endpoint name rate tags 1
