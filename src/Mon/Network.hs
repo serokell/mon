@@ -1,5 +1,4 @@
--- | This module encapsulates usage of 'network' library UDP sending.
-
+-- | This module encapsulates the usage of the @network@ library.
 module Mon.Network
        ( Endpoint
        , sendStatsdUDP
@@ -12,18 +11,19 @@ import Network.Socket (AddrInfo (..), Family (AF_INET), SocketType (Datagram), a
                        socket, withSocketsDo)
 import Network.Socket.ByteString (send)
 
-import Mon.Types (StatsdMessage, encodeStatsdMessage)
+import Mon.Network.Statsd (StatsdMessage, encodeStatsdMessage)
 
+
+-- | Host and port of the monitoring server.
 type Endpoint = (Text, Int)
 
-
--- | Function that sends UDP message containing 'StatsdMessage'.
+-- | Function that sends a 'StatsdMessage' as a UDP message.
 sendStatsdUDP :: Endpoint -> StatsdMessage -> IO ()
 sendStatsdUDP endpoint statsdMessage =
     sendUDP endpoint (encodeStatsdMessage statsdMessage)
 
 sendUDP :: Endpoint -> ByteString -> IO ()
-sendUDP (host,port) msg = withSocketsDo $ do
+sendUDP (host, port) msg = withSocketsDo $ do
     let hints = defaultHints { addrFamily = AF_INET
                              , addrSocketType = Datagram
                              }

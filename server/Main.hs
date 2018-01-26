@@ -18,13 +18,15 @@ import Network.Socket (AddrInfoFlag (AI_PASSIVE), Socket, SocketType (Datagram),
 import Network.Socket.ByteString (recvFrom)
 import Options.Applicative (Parser, argument, auto, execParser, helper, info, metavar, progDesc)
 import System.Metrics (Store, createCounter, createDistribution, createGauge)
+import System.Remote.Monitoring.Wai (forkServer, serverMetricStore)
+
+import Mon.Network.Statsd (StatsdMessage (..))
+import Mon.Network.Statsd.Parse (decodeStatsdMessage)
+import Mon.Types (MetricType (..), Name, Tag)
+
 import qualified System.Metrics.Counter as SMC
 import qualified System.Metrics.Distribution as SMD
 import qualified System.Metrics.Gauge as SMG
-import System.Remote.Monitoring.Wai (forkServer, serverMetricStore)
-
-import Mon.Types (Name, StatsdMessage (..), Tag, decodeStatsdMessage)
-import qualified Mon.Types as MT
 
 data Metric = CounterM !SMC.Counter
             | GaugeM !SMG.Gauge
@@ -42,9 +44,9 @@ type StoreMap = Map Name Metric
 
 createMetric :: StatsdMessage -> Store -> IO Metric
 createMetric StatsdMessage {..} store  = case smMetricType of
-    MT.Counter -> CounterM <$> createCounter taggedName store
-    MT.Gauge   -> GaugeM <$> createGauge taggedName store
-    MT.Timer   -> DistributionM <$> createDistribution taggedName store
+    Counter -> CounterM <$> createCounter taggedName store
+    Gauge   -> GaugeM <$> createGauge taggedName store
+    Timer   -> DistributionM <$> createDistribution taggedName store
   where
     taggedName = tagName smName smTags
 

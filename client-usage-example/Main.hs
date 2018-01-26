@@ -9,7 +9,7 @@ import Control.Concurrent (threadDelay)
 import Options.Applicative (Parser, argument, auto, execParser, helper, info, metavar, progDesc,
                             strArgument)
 
-import Mon.Client (recordCounter, recordGauge, recordTimer, reportEvent)
+import Mon (recordCounter, recordGauge, recordTimer, reportEvent)
 
 mainArgsP :: Parser (Text,Int)
 mainArgsP = (,)
