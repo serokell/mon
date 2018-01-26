@@ -8,16 +8,16 @@ maintainer:          "hi@serokell.io"
 copyright:           "2018 Serokell"
 
 extra-source-files:
-- README.md
+  - README.md
 
 
 default-extensions:
-    - NoImplicitPrelude
-    - OverloadedStrings
+  - NoImplicitPrelude
+  - OverloadedStrings
 
 dependencies:
-    - base >= 4.7 && < 5
-    - universum
+  - base >= 4.7 && < 5
+  - universum
 
 library:
   source-dirs: src
