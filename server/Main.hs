@@ -52,7 +52,7 @@ createMetric StatsdMessage {..} store  = case smMetricType of
     taggedName = tagName smName smTags
 
 tagName :: Name -> [Tag] -> Text
-tagName name tags = name <> intercalate ";" (map showTag tags)
+tagName name tags = name <> intercalate ";" ("" : map showTag tags)
   where
     showTag :: (Text, Text) -> Text
     showTag (tag, value) = tag <> if null value then "" else "=" <> value
