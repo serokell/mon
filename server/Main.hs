@@ -1,9 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Local and non-persistent monitoring server.
---   Listens for UDP statsd messages, parses and stores metrics/events
---   to ekg store whoose data is diplayed by ekg-wai http server
-
+-- Listens for UDP statsd messages, parses and stores metrics/events
+-- to ekg store whose data is diplayed by ekg-wai http server.
 module Main
        ( main
        ) where
@@ -37,7 +36,7 @@ addValueToMetric :: Int -> Metric -> IO ()
 addValueToMetric value (CounterM counter) =
     SMC.add counter $ fromIntegral value
 addValueToMetric value (GaugeM gauge) =
-    SMG.add gauge $ fromIntegral value
+    SMG.set gauge $ fromIntegral value
 addValueToMetric value (DistributionM distriution) =
     SMD.add distriution $ fromIntegral value
 
@@ -73,8 +72,6 @@ mainArgsP = (,)
         <$> argument auto (metavar "<statsd_listen_port>")
         <*> argument auto (metavar "<ekg_http_interface_port>")
 
--- | Specify statsd UDP listening port
---   and http wai server port
 main :: IO ()
 main = do
     let opts = info (mainArgsP <**> helper) (fullDesc <> progDesc "ekg-based mon server")
