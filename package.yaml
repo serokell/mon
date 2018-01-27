@@ -22,5 +22,28 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - attoparsec
     - bytestring
     - network
+    - text
+
+
+executables:
+  local-server:
+    source-dirs: server
+    main: Main.hs
+    dependencies:
+      - mon
+      - containers
+      - ekg-core
+      - ekg-wai
+      - network
+      - optparse-applicative
+      - text
+
+  client-usage-example:
+    source-dirs: client-usage-example
+    main: Main.hs
+    dependencies:
+      - mon
+      - optparse-applicative

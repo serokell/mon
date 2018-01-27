@@ -1,49 +1,23 @@
-{-# LANGUAGE RecordWildCards #-}
-
--- | StatsdMessage is a representation of a statsd udp message.
+-- | Mon basic types.
 module Mon.Types
-       ( StatsdMessage (..)
-       , MetricType (..)
+       ( MetricType (..)
        , Name
        , Tag
        , Rate
-       , encodeStatsdMessage
        ) where
 
-import Universum hiding (intercalate)
+import Universum
 
-import Data.ByteString (intercalate)
 
-data StatsdMessage = StatsdMessage
-    { smName       :: !Name
-    , smValue      :: !Int
-    , smMetricType :: !MetricType
-    , smRate       :: !(Maybe Double)
-    , smTags       :: ![Tag]
-    } deriving Show
-
+-- | Enumeration of types of metrics.
 data MetricType = Counter | Gauge | Timer
     deriving Show
 
+-- | Name of a metric.
 type Name = Text
+
+-- | Tag (label).
 type Tag = (Text,Text)
+
+-- | Sample rate of a metric.
 type Rate = Double
-
-encodeStatsdMessage :: StatsdMessage -> ByteString
-encodeStatsdMessage StatsdMessage {..} = intercalate "|" $ catMaybes
-    [ Just $ encodeUtf8 smName <> ":" <> show smValue
-    , Just $ encodeMetricType smMetricType
-    , ("@" <>) . show <$> smRate
-    , ("#" <>) <$> encodeTags smTags
-    ]
-
-encodeMetricType :: MetricType -> ByteString
-encodeMetricType Counter = "c"
-encodeMetricType Gauge   = "g"
-encodeMetricType Timer   = "ms"
-
-encodeTags :: [Tag] -> Maybe ByteString
-encodeTags []   = Nothing
-encodeTags tags = Just $ intercalate "," (map encodeTag tags)
-  where
-    encodeTag (tag, val) = encodeUtf8 $ tag <> if null val then "" else ":" <> val
