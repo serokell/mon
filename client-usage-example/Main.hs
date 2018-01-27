@@ -10,6 +10,7 @@ import Options.Applicative (Parser, argument, auto, execParser, fullDesc, helper
                             progDesc, strArgument)
 
 import Mon (recordCounter, recordGauge, recordTimer, reportEvent)
+import Mon.Network (Endpoint)
 
 mainArgsP :: Parser (Text, Int)
 mainArgsP = (,)
@@ -21,29 +22,32 @@ cliMessage = "Before running this example have local-server running with"
           <> " 'local-server STATSD_PORT HTTP_PORT'"
           <> " and then run 'client-usage-example 127.0.0.1 STATSD_PORT'."
 
-
+threadDelayPeriod :: Int
+threadDelayPeriod = 1000 * 1000
 -- | To run examples, have local or monitoring server running for receiving
 -- test calls of client's record/report functions.
 main :: IO ()
 main = do
     let opts = info (mainArgsP <**> helper) (fullDesc <> progDesc cliMessage)
     endpoint <- execParser opts
-
-    loop endpoint  0
+    evaluatingStateT (0::Int) . forever $ do
+        get >>= clientAction endpoint
+        modify succ
   where
-    loop endpoint index = do
-        recordCounter endpoint "test.counter" 2 [] 3
-        recordGauge endpoint "test.gauge" 2 [] 3
-        recordTimer endpoint "test.timer.saw" 2 [] (index `mod` 30)
-        recordTimer endpoint "test.timer.linear" 2 [] index
-        recordTimer endpoint "test.timer.constant" 2 [] 5
-        recordTimer endpoint "test.timer.jumping" 2 []
+    clientAction :: (MonadIO m) => Endpoint -> Int -> m ()
+    clientAction endpoint index = liftIO $ do
+        recordCounter endpoint "test.counter.const" 1 [] 1
+        recordGauge endpoint "test.gauge.const" 1 [] 1
+        recordTimer endpoint "test.timer.saw" 1 [] (index `mod` 30)
+        recordTimer endpoint "test.timer.linear" 1 [] index
+        recordTimer endpoint "test.timer.constant" 1 [] 5
+        recordTimer endpoint "test.timer.jumping" 1 []
                     (index * 104743 `mod` 8171)
-        reportEvent endpoint "test.event" 2 []
-        reportEvent endpoint "test.tags.event" 2
+        reportEvent endpoint "test.event" 1 []
+        reportEvent endpoint "test.tags.event" 1
                     [("tag0Key","tag0Val"),("tag1","")]
-        threadDelay 100000
-        loop endpoint $ succ index
+        threadDelay threadDelayPeriod
+
 
 
 
