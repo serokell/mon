@@ -8,7 +8,7 @@ module Mon
 
 import Universum
 
-import Mon.Network (Endpoint, sendStatsdUDP)
+import Mon.Network (Endpoint, sendStatsdUdp)
 import Mon.Network.Statsd (StatsdMessage (..))
 import Mon.Types (MetricType (..), Name, Rate, Tag)
 
@@ -21,7 +21,7 @@ recordMetric :: MetricType  -- ^ Type of the metric
              -> [Tag]       -- ^ List of tags (labels) to attach
              -> Int         -- ^ Value of the metric
              -> IO ()
-recordMetric metricType endpoint name rate tags value = sendStatsdUDP endpoint $
+recordMetric metricType endpoint name rate tags value = sendStatsdUdp endpoint $
     StatsdMessage { smName = name
                   , smValue = value
                   , smMetricType = metricType

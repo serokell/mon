@@ -12,14 +12,15 @@ import Universum hiding (empty, intercalate)
 import Data.Map (empty, insert, member, (!))
 import Data.Text (intercalate)
 import Network.Socket (AddrInfoFlag (AI_PASSIVE), Socket, SocketType (Datagram), addrAddress,
-                       addrFamily, addrFlags, bind, close, defaultHints, defaultProtocol,
-                       getAddrInfo, socket, withSocketsDo)
+                       addrFamily, addrFlags, bind, defaultHints, defaultProtocol, getAddrInfo,
+                       withSocketsDo)
 import Network.Socket.ByteString (recvFrom)
 import Options.Applicative (Parser, argument, auto, execParser, fullDesc, helper, info, metavar,
                             progDesc)
 import System.Metrics (Store, createCounter, createDistribution, createGauge)
 import System.Remote.Monitoring.Wai (forkServer, serverMetricStore)
 
+import Mon.Network (withSocket)
 import Mon.Network.Statsd (StatsdMessage (..))
 import Mon.Network.Statsd.Parse (decodeStatsdMessage)
 import Mon.Types (MetricType (..), Name, Tag)
@@ -82,13 +83,13 @@ main = do
 
 listen :: Int -> Store -> IO ()
 listen port store = withSocketsDo $ do
-    (serveraddr:_) <- getAddrInfo
-                      (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
-                      Nothing (Just $ show port)
-    sock <- socket (addrFamily serveraddr) Datagram defaultProtocol
-    bind sock (addrAddress serveraddr)
-    handler sock
-    close sock
+    let hints = defaultHints { addrFlags = [AI_PASSIVE] }
+    (sa :_ ) <- getAddrInfo (Just hints)
+                            Nothing
+                            (Just $ show port)
+
+    withSocket (addrFamily sa) Datagram defaultProtocol $ \sock ->
+        bind sock (addrAddress sa) *> handler sock
   where
     handler :: Socket -> IO ()
     handler sock = evaluatingStateT empty . forever $ do
