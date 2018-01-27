@@ -15,8 +15,8 @@ import Network.Socket (AddrInfoFlag (AI_PASSIVE), Socket, SocketType (Datagram),
                        addrFamily, addrFlags, bind, defaultHints, defaultProtocol, getAddrInfo,
                        withSocketsDo)
 import Network.Socket.ByteString (recvFrom)
-import Options.Applicative (Parser, argument, auto, execParser, fullDesc, helper, info, metavar,
-                            progDesc)
+import Options.Applicative (Parser, argument, auto, execParser, fullDesc, fullDesc, helper, info,
+                            metavar, progDesc)
 import System.Metrics (Store, createCounter, createDistribution, createGauge)
 import System.Remote.Monitoring.Wai (forkServer, serverMetricStore)
 
@@ -52,7 +52,7 @@ createMetric StatsdMessage {..} store  = case smMetricType of
     taggedName = tagName smName smTags
 
 tagName :: Name -> [Tag] -> Text
-tagName name tags = name <> (intercalate ";" $ "" : fmap showTag tags)
+tagName name tags = name <> intercalate ";" (map showTag tags)
   where
     showTag :: (Text, Text) -> Text
     showTag (tag, value) = tag <> if null value then "" else "=" <> value
@@ -70,8 +70,8 @@ addMeasurement statsdMessage@StatsdMessage {..} store storeMap = do
 
 mainArgsP :: Parser (Int, Int)
 mainArgsP = (,)
-        <$> argument auto (metavar "<statsd_listen_port>")
-        <*> argument auto (metavar "<ekg_http_interface_port>")
+        <$> argument auto (metavar "STATSD_PORT")
+        <*> argument auto (metavar "HTTP_PORT")
 
 main :: IO ()
 main = do

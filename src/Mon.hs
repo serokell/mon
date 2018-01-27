@@ -21,7 +21,7 @@ recordMetric :: MetricType  -- ^ Type of the metric
              -> [Tag]       -- ^ List of tags (labels) to attach
              -> Int         -- ^ Value of the metric
              -> IO ()
-recordMetric metricType endpoint name rate tags value = sendStatsdUdp endpoint $
+recordMetric metricType endpoint name rate tags value = sendStatsdUdp endpoint
     StatsdMessage { smName = name
                   , smValue = value
                   , smMetricType = metricType

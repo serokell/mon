@@ -6,31 +6,29 @@ module Main
 import Universum
 
 import Control.Concurrent (threadDelay)
-import Options.Applicative (Parser, argument, auto, execParser, helper, info, metavar, progDesc,
-                            strArgument)
+import Options.Applicative (Parser, argument, auto, execParser, fullDesc, helper, info, metavar,
+                            progDesc, strArgument)
 
 import Mon (recordCounter, recordGauge, recordTimer, reportEvent)
 
-mainArgsP :: Parser (Text,Int)
+mainArgsP :: Parser (Text, Int)
 mainArgsP = (,)
-        <$> (fmap toText $ strArgument (metavar "<monitoring_server_host>"))
-        <*> argument auto (metavar "<monitoring_server_statsd_listen_port>")
+        <$> fmap toText (strArgument (metavar "STATSD_HOST"))
+        <*> argument auto (metavar "STATSD_PORT")
 
 cliMessage :: String
 cliMessage = "Before running this example have local-server running with"
-          <> "'local-server <statsd_listen_port> <ekg_http_interface_port>'"
-          <> " and then run 'client-usage-example 127.0.0.1 "
-          <> "<monitoring_server_statsd_listen_port>'"
-          <> " or specify host and port of monitoring server."
+          <> " 'local-server STATSD_PORT HTTP_PORT'"
+          <> " and then run 'client-usage-example 127.0.0.1 STATSD_PORT'."
 
 
 -- | To run examples, have local or monitoring server running for receiving
---   test calls of client's record/report functions.
+-- test calls of client's record/report functions.
 main :: IO ()
 main = do
-    (host,port) <- execParser $ info (helper <*> mainArgsP) $
-                   progDesc cliMessage
-    let endpoint = (host, port)
+    let opts = info (mainArgsP <**> helper) (fullDesc <> progDesc cliMessage)
+    endpoint <- execParser opts
+
     loop endpoint  0
   where
     loop endpoint index = do
