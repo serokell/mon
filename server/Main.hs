@@ -16,7 +16,8 @@ import Network.Socket (AddrInfoFlag (AI_PASSIVE), Socket, SocketType (Datagram),
                        addrFamily, addrFlags, bind, close, defaultHints, defaultProtocol,
                        getAddrInfo, socket, withSocketsDo)
 import Network.Socket.ByteString (recvFrom)
-import Options.Applicative (Parser, argument, auto, execParser, helper, info, metavar, progDesc)
+import Options.Applicative (Parser, argument, auto, execParser, fullDesc, helper, info, metavar,
+                            progDesc)
 import System.Metrics (Store, createCounter, createDistribution, createGauge)
 import System.Remote.Monitoring.Wai (forkServer, serverMetricStore)
 
@@ -44,8 +45,8 @@ type StoreMap = Map Name Metric
 
 createMetric :: StatsdMessage -> Store -> IO Metric
 createMetric StatsdMessage {..} store  = case smMetricType of
-    Counter -> CounterM <$> createCounter taggedName store
-    Gauge   -> GaugeM <$> createGauge taggedName store
+    Counter -> CounterM      <$> createCounter      taggedName store
+    Gauge   -> GaugeM        <$> createGauge        taggedName store
     Timer   -> DistributionM <$> createDistribution taggedName store
   where
     taggedName = tagName smName smTags
@@ -59,8 +60,8 @@ tagName name tags = name <> (intercalate ";" $ "" : fmap showTag tags)
 addMeasurement :: StatsdMessage -> Store -> StoreMap -> IO StoreMap
 addMeasurement statsdMessage@StatsdMessage {..} store storeMap = do
     newMetric <- if member taggedName storeMap
-                    then return (storeMap ! taggedName)
-                    else createMetric statsdMessage store
+                 then return (storeMap ! taggedName)
+                 else createMetric statsdMessage store
     addValueToMetric smValue newMetric
     return $ insert taggedName newMetric storeMap
   where
@@ -76,8 +77,9 @@ mainArgsP = (,)
 --   and http wai server port
 main :: IO ()
 main = do
-    (listenPort, waiPort)  <- execParser $  info (helper <*> mainArgsP) $
-                                            progDesc "Local monitoring server"
+    let opts = info (mainArgsP <**> helper) (fullDesc <> progDesc "ekg-based mon server")
+    (listenPort, waiPort) <- execParser opts
+
     store <- serverMetricStore <$> forkServer "127.0.0.1" waiPort
     listen listenPort store
 
@@ -88,13 +90,14 @@ listen port store = withSocketsDo $ do
                       Nothing (Just $ show port)
     sock <- socket (addrFamily serveraddr) Datagram defaultProtocol
     bind sock (addrAddress serveraddr)
-    handler sock empty
+    handler sock
     close sock
   where
-    handler :: Socket -> StoreMap -> IO ()
-    handler sock storeMap = do
-        (msg,_) <- recvFrom sock 1024
-        let statsdMessage = decodeStatsdMessage msg
-        newStoreMap <- addMeasurement statsdMessage store storeMap
-        print statsdMessage
-        handler sock newStoreMap
+    handler :: Socket -> IO ()
+    handler sock = evaluatingStateT empty . forever $ do
+        (msg, _) <- liftIO $ recvFrom sock 1024
+        whenRight (decodeStatsdMessage msg) $ \statsdMessage -> do
+            print statsdMessage
+            storeMap <- get
+            newStoreMap <- liftIO $ addMeasurement statsdMessage store storeMap
+            put newStoreMap

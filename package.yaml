@@ -25,6 +25,7 @@ library:
     - attoparsec
     - bytestring
     - network
+    - text
 
 
 executables:

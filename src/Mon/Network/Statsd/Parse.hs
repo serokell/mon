@@ -1,62 +1,50 @@
+{-# LANGUAGE RecordWildCards #-}
+
 -- | Parsers for the mon wire protocol messages.
 module Mon.Network.Statsd.Parse
        ( decodeStatsdMessage
        , statsdMessageP
        ) where
 
-import Universum hiding (takeWhile)
+import Universum
 
-import Data.Attoparsec.ByteString (parseOnly)
-import Data.Attoparsec.ByteString.Char8 (Parser, char, decimal, double, sepBy, string, takeWhile,
-                                         (<?>))
+import Data.Attoparsec.Text (Parser, char, decimal, double, endOfInput, parseOnly, sepBy1, string,
+                             takeWhile1, (<?>))
 
 import Mon.Network.Statsd (StatsdMessage (..))
 import Mon.Types (MetricType (..), Tag)
 
 
+-- | Try to parse a 'ByteString' as a 'StatsdMessage'.
+decodeStatsdMessage :: ByteString -> Either Text StatsdMessage
+decodeStatsdMessage = first fromString
+                    . parseOnly (statsdMessageP <* endOfInput)
+                    . decodeUtf8
+
+-- | Parse a 'StatsdMessage'.
 statsdMessageP :: Parser StatsdMessage
 statsdMessageP = flip (<?>) "statsdMessage" $ do
-    name <- takeWhile (/= ':')
-    void colonP
-    value <- decimal
-    void pipeP
-    metricType <- metricTypeP
-    maybeRate <- optional $ pipeP >> atP >> double
-    maybeTags <- optional $ pipeP >> hashP >> tagsP
-    return $ StatsdMessage
-        { smName = decodeUtf8 name
-        , smValue = value
-        , smMetricType = metricType
-        , smRate = maybeRate
-        , smTags = fromMaybe [] maybeTags
-        }
+    smName       <- takeWhile1 (/= ':') <* char ':'
+    smValue      <- decimal
+    smMetricType <- char '|' *> metricTypeP
+    smRate       <- optional (string "|@" *> double)
+    smTags       <- string "|#" *> tagsP <|> pure []
+    pure StatsdMessage{..}
 
-pipeP, colonP, atP, hashP, commaP :: Parser Char
-[pipeP, colonP, atP, hashP, commaP] = char <$> "|:@#,"
-
-tagsP :: Parser [Tag]
-tagsP = tagP `sepBy` commaP <?> "tags"
-
-tagP, tagKeyP, tagKeyValueP :: Parser Tag
-tagP = tagKeyValueP <|> tagKeyP <?> "tag"
-tagKeyP = flip (<?>) "tagKey" $ do
-    key <- takeWhile (/= ',')
-    return (decodeUtf8 key, "")
-
-tagKeyValueP = flip (<?>) "tagKeyValue" $ do
-    tag <- takeWhile ((&&) <$> (/= ':') <*> (/= ','))
-    void colonP
-    tagValue <- takeWhile (/= ',')
-    return (decodeUtf8 tag, decodeUtf8 tagValue)
-
+-- | Parse a 'MetricType'.
 metricTypeP :: Parser MetricType
-metricTypeP =
-    (string "c"  >> return Counter)   <|>
-    (string "g"  >> return Gauge)     <|>
-    (string "ms" >> return Timer)
-    <?> "metricType"
+metricTypeP = string "c"  $> Counter
+          <|> string "g"  $> Gauge
+          <|> string "ms" $> Timer
+          <?> "metricType"
 
-decodeStatsdMessage :: ByteString -> StatsdMessage
-decodeStatsdMessage bs = case parseOnly statsdMessageP bs of
-    Left err -> error $ toText err
-    Right sm -> sm
+-- | Parse a list of 'Tag's.
+tagsP :: Parser [Tag]
+tagsP = tagP `sepBy1` char ',' <?> "tags"
+
+-- | Parse a single 'Tag'.
+tagP :: Parser Tag
+tagP = do
+    key <- takeWhile1 (`notElem` [':', ','])
+    val <- char ':' *> takeWhile1 (/= ',') <|> pure ""
+    pure (key, val)

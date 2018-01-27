@@ -8,7 +8,7 @@ module Mon.Network.Statsd
 
 import Universum hiding (intercalate)
 
-import Data.ByteString (intercalate)
+import Data.Text (intercalate)
 
 import Mon.Types (MetricType (..), Name, Rate, Tag)
 
@@ -24,22 +24,24 @@ data StatsdMessage = StatsdMessage
 
 -- | Convert a 'StatsdMessage' into a sequence of bytes.
 encodeStatsdMessage :: StatsdMessage -> ByteString
-encodeStatsdMessage StatsdMessage {..} = intercalate "|" $ catMaybes
-    [ Just $ encodeUtf8 smName <> ":" <> show smValue
+encodeStatsdMessage StatsdMessage {..} = encodeUtf8 . intercalate "|" $ catMaybes
+    [ Just $ smName <> ":" <> show smValue
     , Just $ encodeMetricType smMetricType
     , ("@" <>) . show <$> smRate
     , ("#" <>) <$> encodeTags smTags
     ]
 
 -- | Encode a 'MetricType'.
-encodeMetricType :: MetricType -> ByteString
+encodeMetricType :: MetricType -> Text
 encodeMetricType Counter = "c"
 encodeMetricType Gauge   = "g"
 encodeMetricType Timer   = "ms"
 
 -- | Encode a list of 'Tag's.
-encodeTags :: [Tag] -> Maybe ByteString
+encodeTags :: [Tag] -> Maybe Text
 encodeTags []   = Nothing
 encodeTags tags = Just $ intercalate "," (map encodeTag tags)
-  where
-    encodeTag (tag, val) = encodeUtf8 $ tag <> if null val then "" else ":" <> val
+
+-- | Encode a single 'Tag'.
+encodeTag :: Tag -> Text
+encodeTag (tag, val) = tag <> if null val then "" else ":" <> val
