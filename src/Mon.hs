@@ -11,6 +11,7 @@ import Universum
 import Mon.Network (Endpoint, sendStatsdUdp)
 import Mon.Network.Statsd (StatsdMessage (..))
 import Mon.Types (MetricType (..), Name, Rate, Tag)
+import System.Random (randomRIO)
 
 
 -- | Record a new value for a metric.
@@ -21,13 +22,15 @@ recordMetric :: MetricType  -- ^ Type of the metric
              -> [Tag]       -- ^ List of tags (labels) to attach
              -> Int         -- ^ Value of the metric
              -> IO ()
-recordMetric metricType endpoint name rate tags value = sendStatsdUdp endpoint
-    StatsdMessage { smName = name
-                  , smValue = value
-                  , smMetricType = metricType
-                  , smRate = Just rate
-                  , smTags = tags
-                  }
+recordMetric metricType endpoint name rate tags value = do
+    send <- (<= rate) <$> randomRIO (0, 1)
+    when send $ sendStatsdUdp endpoint StatsdMessage
+        { smName = name
+        , smValue = value
+        , smMetricType = metricType
+        , smRate = Just rate
+        , smTags = tags
+        }
 
 -- | Record a new counter, gauge or timer.
 recordCounter, recordGauge, recordTimer
