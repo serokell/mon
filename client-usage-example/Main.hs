@@ -14,7 +14,7 @@ import Mon.Network (Endpoint)
 
 mainArgsP :: Parser (Text, Int)
 mainArgsP = (,)
-        <$> fmap toText (strArgument (metavar "STATSD_HOST"))
+        <$> strArgument (metavar "STATSD_HOST")
         <*> argument auto (metavar "STATSD_PORT")
 
 cliMessage :: String
