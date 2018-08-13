@@ -4,6 +4,7 @@ module Mon
        , recordGauge
        , recordTimer
        , reportEvent
+       , recordMetric
        ) where
 
 import Universum
