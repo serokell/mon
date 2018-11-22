@@ -1,6 +1,8 @@
 # Mon
 
-Mon is a lightweight Haskell library used for monitoring (client). Purpose of the library is to achieve monitoring functionality by adding minimal weight on the code being monitored e.g. small set of dependencies and minimal code integration. This is accomplished with simple `MonadIO` functions that send metrics to the receiving server.
+Mon is a lightweight library to emit metrics using the StatsD protocol.
+
+Purpose of the library is to achieve monitoring functionality by adding minimal weight on the code being monitored e.g. small set of dependencies and minimal code integration. This is accomplished with simple `MonadIO` functions that send metrics to the receiving server.
 
 Library also contains a server which can be run locally in order to avoid setting up a real (remote) monitoring server.
 
